@@ -5,12 +5,16 @@ Tiny Hyper key daemon for macOS 🪄
 ## Features
 
 - While the Escape key is held down, it acts as if you're holding down ⌃⌥⌘⇧
-  (a.k.a the Hyper key),
+  (Ctrl-Option-Command-Shift), also known as the Hyper key,
 - otherwise, it acts like Escape.
 
 ... There are no other features, there is no configuration.
 
 This is by design!
+
+> [!TIP]
+> You can map Caps Lock to Escape (and therefore to Hyper):
+> System Settings → Keyboard → Keyboard Shortcuts → Modifier Keys
 
 ## Installation
 
@@ -18,6 +22,18 @@ This is by design!
 brew tap ElliottH/hypr
 brew install hypr
 ```
+
+Then, as `brew` suggests, you will want to start it:
+
+```sh
+brew services start elliotth/hypr/hypr
+```
+
+This will take care of starting it in the background, and making sure it starts
+at login.
+
+You will be prompted to grant Accessibility permissions to `hypr`, which it
+needs so that it can do its job.
 
 ## Why?
 
