@@ -32,28 +32,28 @@ class Handler {
                 // Leave our escape keyDown's alone
                 return Unmanaged.passUnretained(event)
             } else {
+                // Real escape keyDown
                 escDown = true
                 escEvent = event
                 return nil
             }
         case .keyUp, .keyDown:
-            if escDown {
-                setHyper(event: event)
-            }
-
             // If we're used as hyper, then we're not escape, so we won't emit
             // escape keypresses for this press
             escEvent = nil
-            return Unmanaged.passUnretained(event)
+            return Unmanaged.passUnretained(setHyper(event))
         default:
             return Unmanaged.passUnretained(event)
         }
     }
 
-    func setHyper(event: CGEvent) {
-        event.flags.insert(CGEventFlags.maskShift)
-        event.flags.insert(CGEventFlags.maskControl)
-        event.flags.insert(CGEventFlags.maskAlternate)
-        event.flags.insert(CGEventFlags.maskCommand)
+    func setHyper(_ event: CGEvent) -> CGEvent {
+        if escDown {
+            event.flags.insert(CGEventFlags.maskShift)
+            event.flags.insert(CGEventFlags.maskControl)
+            event.flags.insert(CGEventFlags.maskAlternate)
+            event.flags.insert(CGEventFlags.maskCommand)
+        }
+        return event
     }
 }
