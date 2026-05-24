@@ -41,6 +41,7 @@ func main() {
         exit(1)
     }
 
+    handler.port = port
     register(port)
 
     CFRunLoopRun()

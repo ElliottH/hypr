@@ -4,6 +4,7 @@ import Cocoa
 class Handler {
     let pid = Int64(getpid())
 
+    var port: CFMachPort? = nil
     var escDown = false
     var escEvent: CGEvent? = nil
 
@@ -18,6 +19,9 @@ class Handler {
 
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
         switch type {
+        case .tapDisabledByTimeout, .tapDisabledByUserInput:
+            if let port { CGEvent.tapEnable(tap: port, enable: true) }
+            return nil
         case .keyUp where keyCode == kVK_Escape:
             escDown = false
 
