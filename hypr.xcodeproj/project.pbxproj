@@ -55,6 +55,7 @@
 				4F7D856C2FC45F2700178BF2 /* Sources */,
 				4F7D856D2FC45F2700178BF2 /* Frameworks */,
 				4F7D856E2FC45F2700178BF2 /* Resources */,
+				4F7D85A02FC45F2800178BF2 /* Set Version from Git */,
 			);
 			buildRules = (
 			);
@@ -103,6 +104,28 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		4F7D85A02FC45F2800178BF2 /* Set Version from Git */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Set Version from Git";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "set -e\nif TAG=$(git describe --tags --exact-match HEAD 2>/dev/null); then\n    MARKETING=\"$TAG\"\nelse\n    MARKETING=$(git describe --tags --always 2>/dev/null || echo \"dev\")\nfi\nBUILD=$(git rev-list --count HEAD 2>/dev/null || echo \"0\")\nINFO_PLIST=\"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString ${MARKETING}\" \"$INFO_PLIST\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion ${BUILD}\" \"$INFO_PLIST\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXResourcesBuildPhase section */
 		4F7D856E2FC45F2700178BF2 /* Resources */ = {
@@ -163,7 +186,7 @@
 				DEVELOPMENT_TEAM = J3AL5V2Q4N;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -227,7 +250,7 @@
 				DEVELOPMENT_TEAM = J3AL5V2Q4N;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
