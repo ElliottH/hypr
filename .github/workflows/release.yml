@@ -37,7 +37,9 @@ jobs:
             -project hypr.xcodeproj \
             -scheme hypr \
             -configuration Release \
-            -archivePath hypr.xcarchive
+            -archivePath hypr.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Developer ID Application"
 
       - name: Export
         run: |
