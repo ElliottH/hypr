@@ -16,9 +16,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         setupMenuBar()
         registerLaunchAtLogin()
         if !isAccessibilityGranted {
-            AXIsProcessTrustedWithOptions(
-                [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-            )
+            CGRequestPostEventAccess()
         } else {
             startEventTap()
         }
