@@ -1,30 +1,68 @@
 import AppKit
+import Carbon.HIToolbox
 import ServiceManagement
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private var handler: Handler?
-    private var accessibilityTimer: Timer?
+    private var statusTimer: Timer?
+    private var isAccessibilityGranted = false
+    private var isSecureInputActive = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        isAccessibilityGranted = AXIsProcessTrusted()
+        isSecureInputActive = IsSecureEventInputEnabled()
         setupMenuBar()
         registerLaunchAtLogin()
-        checkAccessibility()
+        if !isAccessibilityGranted {
+            AXIsProcessTrustedWithOptions(
+                [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            )
+        } else {
+            startEventTap()
+        }
+        startStatusPolling()
     }
 
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        if let button = statusItem?.button,
-           let image = NSImage(systemSymbolName: "escape", accessibilityDescription: "hypr") {
-            image.isTemplate = true
+        updateStatusIcon()
+        rebuildMenu()
+    }
+
+    private func updateStatusIcon() {
+        guard let button = statusItem?.button else { return }
+        if !isAccessibilityGranted {
+            button.image = NSImage(systemSymbolName: "escape", accessibilityDescription: "hypr")?
+                .withSymbolConfiguration(.init(paletteColors: [.systemRed, .labelColor]))
+        } else if isSecureInputActive {
+            button.image = NSImage(systemSymbolName: "escape", accessibilityDescription: "hypr")?
+                .withSymbolConfiguration(.init(hierarchicalColor: .secondaryLabelColor))
+        } else {
+            let image = NSImage(systemSymbolName: "escape", accessibilityDescription: "hypr")
+            image?.isTemplate = true
             button.image = image
         }
-        rebuildMenu()
+        button.contentTintColor = nil
     }
 
     private func rebuildMenu() {
         let menu = NSMenu()
         menu.delegate = self
+
+        if !isAccessibilityGranted {
+            let infoItem = NSMenuItem(title: "Accessibility permission required", action: nil, keyEquivalent: "")
+            infoItem.isEnabled = false
+            menu.addItem(infoItem)
+            menu.addItem(NSMenuItem(title: "Open System Settings…", action: #selector(openAccessibilitySettings), keyEquivalent: ""))
+            menu.addItem(.separator())
+        } else if isSecureInputActive {
+            let infoItem = NSMenuItem(title: "Inactive: Secure Keyboard Entry is on", action: nil, keyEquivalent: "")
+            infoItem.isEnabled = false
+            menu.addItem(infoItem)
+            menu.addItem(.separator())
+        }
+
         let loginItem = NSMenuItem(
             title: "Launch at Login",
             action: #selector(toggleLaunchAtLogin),
@@ -34,11 +72,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(loginItem)
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit hypr", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+
         statusItem?.menu = menu
     }
 
     func menuWillOpen(_ menu: NSMenu) {
-        menu.items.first?.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        menu.items.first(where: { $0.action == #selector(toggleLaunchAtLogin) })?.state =
+            SMAppService.mainApp.status == .enabled ? .on : .off
     }
 
     @objc private func toggleLaunchAtLogin() {
@@ -51,6 +91,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         rebuildMenu()
     }
 
+    @objc private func openAccessibilitySettings() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+    }
+
     private func registerLaunchAtLogin() {
         if SMAppService.mainApp.status == .notRegistered {
             try? SMAppService.mainApp.register()
@@ -58,20 +102,33 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         rebuildMenu()
     }
 
-    private func checkAccessibility() {
-        if AXIsProcessTrusted() {
-            startEventTap()
-            return
+    private func startStatusPolling() {
+        statusTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.pollStatus()
         }
-        AXIsProcessTrustedWithOptions(
-            [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-        )
-        accessibilityTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            if AXIsProcessTrusted() {
-                self?.accessibilityTimer?.invalidate()
-                self?.accessibilityTimer = nil
-                self?.startEventTap()
-            }
+    }
+
+    private func pollStatus() {
+        let newAccessibility = AXIsProcessTrusted()
+        let newSecureInput = IsSecureEventInputEnabled()
+
+        let accessibilityChanged = newAccessibility != isAccessibilityGranted
+        let secureInputChanged = newSecureInput != isSecureInputActive
+        let wasSecureInputActive = isSecureInputActive
+
+        isAccessibilityGranted = newAccessibility
+        isSecureInputActive = newSecureInput
+
+        if newAccessibility && handler == nil {
+            startEventTap()
+        }
+        if wasSecureInputActive && !newSecureInput {
+            handler?.reEnable()
+        }
+
+        if accessibilityChanged || secureInputChanged {
+            updateStatusIcon()
+            rebuildMenu()
         }
     }
 
@@ -95,7 +152,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             userInfo: Unmanaged.passUnretained(h).toOpaque()
         ) else {
             handler = nil
-            checkAccessibility()
             return
         }
 

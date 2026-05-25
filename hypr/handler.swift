@@ -55,6 +55,10 @@ class Handler {
         }
     }
 
+    func reEnable() {
+        if let port { CGEvent.tapEnable(tap: port, enable: true) }
+    }
+
     func setHyper(_ event: CGEvent) -> CGEvent {
         if escDown {
             event.flags.insert(CGEventFlags.maskShift)
