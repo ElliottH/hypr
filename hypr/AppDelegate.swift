@@ -107,7 +107,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if SMAppService.mainApp.status == .notRegistered {
             try? SMAppService.mainApp.register()
         }
-        rebuildMenu()
     }
 
     private func startStatusPolling() {
