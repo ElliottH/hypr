@@ -6,6 +6,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private var handler: Handler?
     private var statusTimer: Timer?
+    private var aboutWindowController: AboutWindowController?
     private var isAccessibilityGranted = false
     private var isSecureInputActive = false
 
@@ -71,6 +72,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(loginItem)
         menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: "About hypr", action: #selector(showAbout), keyEquivalent: ""))
+        menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit hypr", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
 
         statusItem?.menu = menu
@@ -89,6 +92,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             try? service.register()
         }
         rebuildMenu()
+    }
+
+    @objc private func showAbout() {
+        if aboutWindowController == nil {
+            aboutWindowController = AboutWindowController()
+        }
+        aboutWindowController?.show()
     }
 
     @objc private func openAccessibilitySettings() {
