@@ -17,14 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build universal binary
-        run: |
-          swift build -c release --arch arm64
-          swift build -c release --arch x86_64
-          lipo -create -output hypr \
-            .build/arm64-apple-macosx/release/hypr \
-            .build/x86_64-apple-macosx/release/hypr
-
       - name: Import signing certificate
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
@@ -39,14 +31,20 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_KEYCHAIN_PWD" build.keychain
           rm certificate.p12
 
-      - name: Sign binary
+      - name: Archive
         run: |
-          IDENTITY=$(security find-identity -v -p codesigning build.keychain \
-            | grep "Developer ID Application" \
-            | head -1 \
-            | awk -F'"' '{print $2}')
-          codesign --force --options runtime --timestamp --sign "$IDENTITY" hypr
-          codesign --verify --verbose hypr
+          xcodebuild archive \
+            -project hypr.xcodeproj \
+            -scheme hypr \
+            -configuration Release \
+            -archivePath hypr.xcarchive
+
+      - name: Export
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath hypr.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath export/
 
       - name: Notarize
         env:
@@ -57,7 +55,7 @@ jobs:
           ASC_KEY_FILE=$(mktemp)
           echo "$ASC_KEY_CONTENT" > "$ASC_KEY_FILE"
 
-          ditto -c -k --keepParent hypr hypr-notarize.zip
+          ditto -c -k --keepParent export/hypr.app hypr-notarize.zip
 
           xcrun notarytool submit hypr-notarize.zip \
             --key "$ASC_KEY_FILE" \
@@ -67,11 +65,14 @@ jobs:
 
           rm "$ASC_KEY_FILE" hypr-notarize.zip
 
+      - name: Staple
+        run: xcrun stapler staple export/hypr.app
+
       - name: Package release archive
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           ARCHIVE="hypr-${TAG}-macos.zip"
-          ditto -c -k --keepParent hypr "$ARCHIVE"
+          ditto -c -k --keepParent export/hypr.app "$ARCHIVE"
           echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
 
       - name: Create GitHub release
@@ -79,12 +80,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "${GITHUB_REF#refs/tags/}" "$ARCHIVE" --generate-notes
 
-      - name: Homebrew tap summary
+      - name: Homebrew cask update summary
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           SHA256=$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')
           {
-            echo "## Homebrew tap update"
+            echo "## Homebrew cask update"
             echo '```ruby'
             echo "version \"$TAG\""
             echo "sha256 \"$SHA256\""

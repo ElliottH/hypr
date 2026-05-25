@@ -20,20 +20,14 @@ This is by design!
 
 ```sh
 brew tap ElliottH/hypr
-brew install hypr
+brew install --cask ElliottH/hypr/hypr
 ```
 
-Then, as `brew` suggests, you will want to start it:
+`hypr` will appear in your menu bar. You will be prompted to grant Accessibility
+permissions, which it needs so that it can do its job.
 
-```sh
-brew services start elliotth/hypr/hypr
-```
-
-This will take care of starting it in the background, and making sure it starts
-at login.
-
-You will be prompted to grant Accessibility permissions to `hypr`, which it
-needs so that it can do its job.
+It will add itself to Login Items automatically on first launch, so it starts
+with your Mac. You can toggle this from the menu bar icon.
 
 ## Why?
 

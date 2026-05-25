@@ -14,11 +14,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build
-        run: swift build -c release
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: hypr-dev
-          path: .build/release/hypr
-          retention-days: 7
+        run: |
+          xcodebuild build \
+            -project hypr.xcodeproj \
+            -scheme hypr \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO
