@@ -67,10 +67,5 @@ class AboutWindowController: NSWindowController {
     func show() {
         window?.center()
         window?.makeKeyAndOrderFront(nil)
-        if #available(macOS 14.0, *) {
-            NSApp.activate()
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
-        }
     }
 }
