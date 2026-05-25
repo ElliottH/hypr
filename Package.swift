@@ -7,7 +7,15 @@ let package: Package = Package(
     name: "hypr",
     targets: [
         .executableTarget(
-            name: "hypr"
+            name: "hypr",
+            linkerSettings: [
+                .unsafeFlags([
+                    "-Xlinker", "-sectcreate",
+                    "-Xlinker", "__TEXT",
+                    "-Xlinker", "__info_plist",
+                    "-Xlinker", "Sources/Info.plist",
+                ])
+            ]
         )
     ]
 )
