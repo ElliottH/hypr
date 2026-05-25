@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - '[0-9]*'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -78,6 +78,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "${GITHUB_REF#refs/tags/}" "$ARCHIVE" --generate-notes
+
+      - name: Homebrew tap summary
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          SHA256=$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')
+          {
+            echo "## Homebrew tap update"
+            echo '```ruby'
+            echo "version \"$TAG\""
+            echo "sha256 \"$SHA256\""
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Clean up keychain
         if: always()
