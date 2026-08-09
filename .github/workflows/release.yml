@@ -107,6 +107,8 @@ jobs:
 
   update-cask:
     needs: release
+    permissions:
+      contents: write
     uses: ElliottH/homebrew-tap/.github/workflows/update-cask.yml@main
     with:
       app: hypr
