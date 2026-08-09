@@ -19,8 +19,8 @@ This is by design!
 ## Installation
 
 ```sh
-brew tap ElliottH/hypr
-brew install --cask ElliottH/hypr/hypr
+brew tap ElliottH/tap
+brew install --cask ElliottH/tap/hypr
 ```
 
 `hypr` will appear in your menu bar. You will be prompted to grant Accessibility
