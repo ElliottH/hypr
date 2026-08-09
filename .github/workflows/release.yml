@@ -13,6 +13,9 @@ jobs:
     runs-on: macos-latest
     permissions:
       contents: write
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+      sha256: ${{ steps.package.outputs.sha256 }}
 
     steps:
       - uses: actions/checkout@v4
@@ -73,11 +76,15 @@ jobs:
         run: xcrun stapler staple export/hypr.app
 
       - name: Package release archive
+        id: package
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           ARCHIVE="hypr-${TAG}-macos.zip"
           ditto -c -k --keepParent export/hypr.app "$ARCHIVE"
+          SHA256=$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')
           echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+          echo "version=$TAG" >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub release
         env:
@@ -86,16 +93,24 @@ jobs:
 
       - name: Homebrew cask update summary
         run: |
-          TAG="${GITHUB_REF#refs/tags/}"
-          SHA256=$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')
           {
             echo "## Homebrew cask update"
             echo '```ruby'
-            echo "version \"$TAG\""
-            echo "sha256 \"$SHA256\""
+            echo "version \"${{ steps.package.outputs.version }}\""
+            echo "sha256 \"${{ steps.package.outputs.sha256 }}\""
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Clean up keychain
         if: always()
         run: security delete-keychain build.keychain 2>/dev/null || true
+
+  update-cask:
+    needs: release
+    uses: ElliottH/homebrew-tap/.github/workflows/update-cask.yml@main
+    with:
+      app: hypr
+      version: ${{ needs.release.outputs.version }}
+      sha256: ${{ needs.release.outputs.sha256 }}
+    secrets:
+      TAP_REPO_TOKEN: ${{ secrets.TAP_REPO_TOKEN }}
